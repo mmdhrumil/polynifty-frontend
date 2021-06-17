@@ -1,21 +1,7 @@
-import Head from 'next/head'
-import Image from 'next/image'
 import styles from '../styles/Home.module.css'
-import * as constants from '../config/constants';
 import { useState, useEffect } from 'react';
 import { loadConstants } from '../lib/util';
-
-// const params = [{
-//   chainId: '0x13881',
-//   chainName: 'Mumbai Testnet',
-//   nativeCurrency: {
-//     name: 'MATIC Token',
-//     symbol: 'MATIC',
-//     decimals: 18
-//   },
-//   rpcUrls: ['https://rpc-mumbai.matic.today'],
-//   blockExplorerUrls: ['https://mumbai-explorer.matic.today']
-// }]
+import { ethers } from "ethers";
 
 
 export async function getServerSideProps(context) {
@@ -27,41 +13,65 @@ export async function getServerSideProps(context) {
   }
 }
 
-async function connectToMetamask(constants) {
 
-  // Store the MUMBAI_TESTNET config params
-  const params = constants.network_params.MUMBAI_TESTNET.MUMBAI_TESTNET_PARAMS;
 
-  // Check if ethereum object present and MetaMask installed
-  if(typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+export default function Home(props) {
 
-    // Request MetaMask account login
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-    // Request user to switch chain if not MUMBAI_TESTNET
+  
+  async function switchChainIfNeeded(constants) {
+    
     if(window.ethereum.networkVersion !== constants.network_params.MUMBAI_TESTNET.MUMBAI_TESTNET_NETWORK_VERSION) {
-
+      // Store the MUMBAI_TESTNET config params
+      const params = constants.network_params.MUMBAI_TESTNET.MUMBAI_TESTNET_PARAMS;
+      
       try{
         const chainSwitchResponse = await window.ethereum.request({ method: 'wallet_addEthereumChain', params})
       }
       catch(err) {
         console.log("err.code: ", err.code)
-        console.log("network_params.NETWORK_SWITCH_REJECT_ERROR_CODE: ", constants.NETWORK_SWITCH_REJECT_ERROR_CODE)
-        if(err.code === constants.NETWORK_SWITCH_REJECT_ERROR_CODE) {
-          alert(constants.NETWORK_SWITCH_REJECT_FEEDBACK_MSG);
-        }
+        alert(err.message)
       }
     }
   }
-}
 
+  async function connectToMetamask(constants) {
 
-export default function Home(props) {
+    // Check if ethereum object present and MetaMask installed
+    if(typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+
+      ethereum
+        .request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }],
+        })
+        .then((permissions) => {
+          const accountsPermission = permissions.find(
+            (permission) => permission.parentCapability === 'eth_accounts'
+          );
+          if (accountsPermission) {
+            console.log('eth_accounts permission successfully requested!');
+          }
+        })
+        .catch((error) => {
+          if (error.code === 4001) {
+            // EIP-1193 userRejectedRequest error
+            console.log('Permissions needed to continue.');
+          } else {
+            console.error(error);
+          }
+        });
+
+      switchChainIfNeeded(constants)
+
+    }
+  }
+
 
   return (
     <div className={styles.container}>
-      NFT-Market
-
+      <div>
+        <p>Hexagon</p>
+      </div>
       <button onClick = {() => {connectToMetamask(props.constants)}}>Log-in with MetaMask</button>
     </div>
   )
