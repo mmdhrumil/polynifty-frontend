@@ -14,9 +14,17 @@ export async function getServerSideProps(context) {
 }
 
 
-
 export default function Home(props) {
 
+  const [currentNetwork,updateCurrentNetwork] = useState();
+
+  async function updateCurrentNetworkWrapper() {
+    await updateCurrentNetwork(window.ethereum.networkVersion);
+  }
+
+  useEffect(() => {
+    updateCurrentNetworkWrapper()
+  }, []);
   
   async function switchChainIfNeeded(constants) {
     
@@ -66,11 +74,20 @@ export default function Home(props) {
     }
   }
 
+  async function fireChainChangedEventListener() {
+    window.ethereum.on('chainChanged', (chainId) => {
+      updateCurrentNetworkWrapper()
+      window.location.reload()
+    });
+  }
+
+  fireChainChangedEventListener()
 
   return (
     <div className={styles.container}>
       <div>
         <p>Hexagon</p>
+        <p>Currently on chain: {currentNetwork}</p>
       </div>
       <button onClick = {() => {connectToMetamask(props.constants)}}>Log-in with MetaMask</button>
     </div>
